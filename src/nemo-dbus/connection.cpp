@@ -44,12 +44,13 @@ ConnectionData::ConnectionData(const QDBusConnection &connection, const QLogging
     : connection(connection)
     , m_logs(logs)
 {
+    QLoggingCategory logCat(logs().categoryName());
     if (connection.isConnected()) {
-        qCDebug(logs, "Connected to %s", qPrintable(connection.name()));
+        qCDebug(logCat, "Connected to %s", qPrintable(connection.name()));
 
         connectToDisconnected();
     } else {
-        qCWarning(logs, "Connection to %s failed.  %s",
+        qCWarning(logCat, "Connection to %s failed.  %s",
                   qPrintable(connection.name()), qPrintable(connection.lastError().message()));
     }
 }
@@ -78,7 +79,8 @@ bool ConnectionData::getProperty(
 
         return true;
     } else {
-        qCWarning(logs, "DBus error (%s %s org.freedesktop.DBus.Properties.Get): %s",
+        QLoggingCategory logCat(logs().categoryName());
+        qCWarning(logCat, "DBus error (%s %s org.freedesktop.DBus.Properties.Get): %s",
                   qPrintable(service),
                   qPrintable(path),
                   qPrintable(reply.errorMessage()));
@@ -95,13 +97,15 @@ void ConnectionData::connectToDisconnected()
                 QStringLiteral("Disconnected"),
                 this,
                 SIGNAL(handleDisconnect()))) {
-        qCWarning(logs, "Failed to connection to connection disconnected signal");
+        QLoggingCategory logCat(logs().categoryName());
+        qCWarning(logCat, "Failed to connection to connection disconnected signal");
     }
 }
 
 void ConnectionData::handleDisconnect()
 {
-    qCDebug(logs, "Disconnected from %s", qPrintable(connection.name()));
+    QLoggingCategory logCat(logs().categoryName());
+    qCDebug(logCat, "Disconnected from %s", qPrintable(connection.name()));
 
     deletePropertyListeners();
 
@@ -126,7 +130,8 @@ Response *ConnectionData::callMethod(
         const QString &method,
         const QVariantList &arguments)
 {
-    qCDebug(logs, "DBus invocation (%s %s %s.%s)",
+    QLoggingCategory logCat(logs().categoryName());
+    qCDebug(logCat, "DBus invocation (%s %s %s.%s)",
             qPrintable(service), qPrintable(path), qPrintable(interface), qPrintable(method));
 
     QDBusMessage message = QDBusMessage::createMethodCall(service, path, interface, method);
@@ -155,7 +160,8 @@ QDBusMessage ConnectionData::blockingCallMethod(
         const QString &method,
         const QVariantList &arguments)
 {
-    qCDebug(logs, "DBus invocation (%s %s %s.%s)",
+    QLoggingCategory logCat(logs().categoryName());
+    qCDebug(logCat, "DBus invocation (%s %s %s.%s)",
             qPrintable(service), qPrintable(path), qPrintable(interface), qPrintable(method));
 
     QDBusMessage message = QDBusMessage::createMethodCall(service, path, interface, method);
@@ -216,16 +222,16 @@ bool Connection::isConnected() const
 bool Connection::reconnect(const QDBusConnection &connection)
 {
     d->connection = connection;
-
+    QLoggingCategory logCat(d->logs().categoryName());
     if (d->connection.isConnected()) {
-        qCDebug(d->logs, "Connected to %s", qPrintable(d->connection.name()));
+        qCDebug(logCat, "Connected to %s", qPrintable(d->connection.name()));
 
         d->connectToDisconnected();
         emit d->connected();
 
         return true;
     } else {
-        qCWarning(d->logs, "Connection to %s failed.  %s",
+        qCWarning(logCat, "Connection to %s failed.  %s",
                   qPrintable(d->connection.name()), qPrintable(d->connection.lastError().message()));
         return false;
     }
@@ -240,7 +246,8 @@ bool Connection::connectToSignal(
         const char *slot)
 {
     if (!d->connection.connect(service, path, interface,  signal, object, slot)) {
-        qCWarning(d->logs, "Failed to connect to (%s %s %s.%s)",
+        QLoggingCategory logCat(d->logs().categoryName());
+        qCWarning(logCat, "Failed to connect to (%s %s %s.%s)",
                   qPrintable(service), qPrintable(path), qPrintable(interface), qPrintable(signal));
         return false;
     } else {
@@ -252,7 +259,8 @@ bool Connection::registerObject(
         const QString &path, QObject *object, QDBusConnection::RegisterOptions options)
 {
     if (!d->connection.registerObject(path, object, options)) {
-        qCWarning(d->logs) << "Failed to register object on path" << path << object;
+        QLoggingCategory logCat(d->logs().categoryName());
+        qCWarning(logCat) << "Failed to register object on path" << path << object;
 
         return false;
     } else {
